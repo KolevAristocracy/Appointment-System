@@ -1,0 +1,76 @@
+body {
+    font-family: sans-serif;
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: .5rem;
+    font-weight: bold;
+}
+
+input, select {
+    width: 100%;
+    padding: .5rem;
+    margin-bottom: .5rem;
+}
+
+button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+/* CSS for time slots */
+.time-slot {
+    padding: 10px 15px;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    background: white;
+    color: #007bff;
+    cursor: pointer;
+    transition: 0.2s;
+    flex: 0 0 calc(33.333% - 10px);
+}
+
+.time-slot:hover {
+    background: #e9ecef;
+}
+
+.time-slot.selected {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+}
+
+#message {
+    margin-top: 1rem;
+    padding: 1rem;
+    display: none;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
