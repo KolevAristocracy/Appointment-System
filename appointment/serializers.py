@@ -62,7 +62,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
         # Overlap Logic
         for appt in existing_appointments:
-            # Calculate start and end of existing appointemnt
+            # Calculate start and end of existing appointment
             existing_start = datetime.datetime.combine(dummy_date, appt.time)
             existing_end = existing_start + appt.service.duration
 

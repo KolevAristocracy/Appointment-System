@@ -177,7 +177,7 @@ async function handleFormSubmit(event) {
             console.error("Server returned errors:", result);
             msgBox.className = 'error'; // Ensure you have this class in CSS
             // Simple error formating
-            msgBox.textContent = JSON.stringify(result);
+            msgBox.textContent = Object.values(result);
             msgBox.style.display = 'block';
         }
 

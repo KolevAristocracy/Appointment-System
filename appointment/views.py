@@ -1,5 +1,8 @@
 import datetime
+import textwrap
 
+from django.conf import settings
+from django.core.mail import send_mail
 # from django.shortcuts import render
 from django.utils import timezone
 from rest_framework import generics
@@ -94,9 +97,9 @@ class AvailableSlotsView(APIView):
                     # 10:00 <= 10:30 < 11:00 -> TRUE (IT'S BUSY!)
                     if start <= slot < end:
                         is_busy = True
-                        break # No point of checking the other intervals
+                        break  # No point of checking the other intervals
                 if is_busy:
-                    continue # skip this slot
+                    continue  # skip this slot
 
                 # Check for pastime (if it's today)
                 slot_full_datetime = datetime.datetime.combine(target_date, slot)
@@ -104,7 +107,6 @@ class AvailableSlotsView(APIView):
                     continue
 
                 available_slots.append(slot.strftime("%H:%M"))
-
 
             return Response(available_slots)
         except Exception as e:
@@ -124,4 +126,40 @@ class CreateAppointmentView(generics.CreateAPIView):
     def perform_create(self, serializer):
         # If a user is logged in (not AnonymousUser), save it.
         user = self.request.user if self.request.user.is_authenticated else None
-        serializer.save(user=user)
+        appointment = serializer.save(user=user)
+
+        # 2. Подготвяме имейл до КЛИЕНТА
+        subject = f"Потвърждение за час: {appointment.date}"
+
+        # 2. Използваме textwrap.dedent, за да махнем отстъпите
+        # f-string-ът запазва променливите, но dedent маха празните места отляво
+        message = textwrap.dedent(f"""
+                    Здравейте, {appointment.client_name}!
+
+                    Успешно запазихте час за:
+                    --------------------------------
+                    Услуга: {appointment.service.name}
+                    При: {appointment.professional.name}
+                    Дата: {appointment.date}
+                    Час: {appointment.time}
+                    --------------------------------
+
+                    Ако искате да отмените, моля обадете се на 0888 123 456.
+
+                    Поздрави,
+                    Екипът на Салона
+                """).strip()
+
+        # Изпращаме (на теория)
+        # В Console режим ще го видиш долу в терминала
+        if appointment.client_email:
+            send_mail(
+                subject,
+                message,
+                settings.EMAIL_HOST_USER,  # От кого
+                [appointment.client_email],  # До кого
+                fail_silently=False,
+            )
+
+        # 3. (По желание) Имейл до СОБСТВЕНИКА
+        # send_mail("Нова резервация!", f"Клиент {appointment.client_name} се записа...", ...)

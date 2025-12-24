@@ -151,3 +151,8 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # For testing, we allow everything (in production, you will set only the site's domain)
 CORS_ALLOWED_ALL_ORIGINS = True
+
+
+# Вместо да праща истински имейл, Django ще го показва в конзолата
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST_USER = 'salon@example.com' # Фалшив подател
