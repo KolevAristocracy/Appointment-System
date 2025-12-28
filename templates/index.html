@@ -16,6 +16,18 @@
     {% csrf_token %}
 
     <div class="form-group">
+        <label>Какво търсите днес?</label>
+        <div class="category-buttons">
+            <label>
+                <input type="radio" name="category" value="hair" checked> 💈 Барбър
+            </label>
+            <label>
+                <input type="radio" name="category" value="massage"> 💆 Масаж
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group">
         <label for="service">Избери услуга:</label>
         <select id="service" required>
             <option value="">Зареждане на услуги...</option>

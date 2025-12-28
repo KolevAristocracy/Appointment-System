@@ -8,10 +8,21 @@ from accounts.validators import PhoneNumberValidator
 from appointmentSystem import settings
 
 class Service(models.Model):
+    CATEGORY_CHOICES = [
+        ('hair', '💈 Фризьор / Барбър'),
+        ('massage', '💆 Масаж / СПА')
+    ]
+
     name = models.CharField(max_length=100, verbose_name="Име на услугата")
     description = models.TextField(blank=True, verbose_name="Описание")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена (лв. / €)")
     duration = models.DurationField(verbose_name="Продължителност") # Example 00:30:00
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='hair',
+        verbose_name="Категория"
+    )
 
     def __str__(self):
         return f"{self.name} {self.duration}"
@@ -21,7 +32,20 @@ class Service(models.Model):
         verbose_name_plural = "Услуги"
 
 class Professional(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='professional_profile',
+        null=True, blank=True,
+        verbose_name="Потребителски акаунт"
+    )
     name = models.CharField(max_length=100, verbose_name="Име на служителя")
+    services = models.ManyToManyField(
+        Service,
+        related_name='professionals',
+        verbose_name="Извършвани услуги"
+    )
+
     is_active = models.BooleanField(default=True, verbose_name="Активен служител")
     # Here I also can add open hours for the future
 
@@ -89,7 +113,7 @@ class Appointment(models.Model):
 
     # --- Business Logic ---
     def end_time(self):
-        # calculate the end time based of the services
+        # calculate the end time based on the services
         # Sum date and time, we add duration and return only the time
         booking_datetime = datetime.datetime.combine(self.date, self.time)
         if timezone.is_naive(booking_datetime):

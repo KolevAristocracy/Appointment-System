@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)ouu+uv(w+2ny7-g#%u8kq&4_davru1=&q+al)i9b7o=q*6d8z'
+SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -30,6 +30,33 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 # Application definition
+
+REST_FRAMEWORK = {
+    # In production We want only JSON
+    # If DEBUG=True We want HTML interface
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+
+    # Adding Spam security (Throttling)
+    #
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle', # for guests
+        'rest_framework.throttling.UserRateThrottle' # for logged-in users
+    ],
+
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day', # guest can make 100 requests per day
+        'user': '1000/day' # a logged-in user can do 1000
+    }
+
+}
+# When I work on a local level, I want to see the interface (not a raw JSON)
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append(
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    )
+
 
 PROJECT_APPS = [
     'rest_framework',

@@ -1,5 +1,6 @@
 import datetime
 import textwrap
+from unicodedata import category
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -15,15 +16,37 @@ from appointment.serializers import ServiceSerializer, ProfessionalSerializer, A
 
 # 1 API, which returns a list with the services (GET)
 class ServiceListView(generics.ListAPIView):
-    queryset = Service.objects.all()
     serializer_class = ServiceSerializer
 
+    def get_queryset(self):
+        queryset = Service.objects.all()
+
+        # Filter by category # (if the user chose massage)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        # Filter by professional (if the user chose first a professional)
+        pro_id = self.request.query_params.get('professional')
+        if pro_id:
+            queryset = queryset.filter(professionals__id=pro_id)
+
+        return queryset
 
 # 2 API, which returns a list with the employees / professionals (GET)
 class ProfessionalListView(generics.ListAPIView):
-    queryset = Professional.objects.filter(is_active=True)
     serializer_class = ProfessionalSerializer
 
+    def get_queryset(self):
+        # get all active professionals
+        queryset = Professional.objects.filter(is_active=True)
+        service_id = self.request.query_params.get('service')
+
+        if service_id:
+            # "Give me professionals which are skilled in service including this ID"
+            queryset = queryset.filter(services__pk=service_id).distinct()  # check later if pk raises issues (change to id if)
+
+        return queryset
 
 # 3 API, which returns available 30-minutes slots (GET)
 class AvailableSlotsView(APIView):
@@ -36,11 +59,20 @@ class AvailableSlotsView(APIView):
         try:
             date_str = request.query_params.get('date')
             pro_id = request.query_params.get('professional')
+            service_id = request.query_params.get('service')
 
-            if not date_str or not pro_id:
-                return Response({"грешка": "Липсва дата или служител"}, status=400)
+            if not date_str or not pro_id or not service_id:
+                return Response({"грешка": "Липсва дата, услуга или служител"}, status=400)
+
+            # Get the duration of the service for the new appointment
+            try:
+                service_obj = Service.objects.get(pk=service_id)
+                new_duration = service_obj.duration
+            except Service.DoesNotExist:
+                return Response({"грешка": "Невалидна услуга"}, status=400)
 
             # Parse date
+            # CHECK LATER: Do I even need this block?
             try:
                 target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             except ValueError:
@@ -50,7 +82,7 @@ class AvailableSlotsView(APIView):
             start_hour = 10
             end_hour = 18  # The last slot will be 17:30 if closes at 18:00
 
-            # 2. Generate all posсible 30-min slots for that day
+            # 2. Generate all possible 30-min slots for that day
             all_slots = []
             current_time = datetime.time(start_hour, 0)
             end_time = datetime.time(end_hour, 0)
@@ -72,15 +104,15 @@ class AvailableSlotsView(APIView):
             # Creating list with busy intervals
             # [(10:00, 11:00), (14:00, 14:30)]
             busy_intervals = []
+            dummy_date = datetime.date(2000, 1, 1)  # random date just for checking
 
             for booking in booked_slots:
                 # start time of the appointment
                 start_time = booking.time
-                # End = Start + Duration of the service
-                dummy_date = datetime.date(2000, 1, 1)  # random date just for checking
-                full_start = datetime.datetime.combine(dummy_date, start_time)
-                full_end = full_start + booking.service.duration
 
+                # End = Start + Duration of the service
+                full_start = datetime.datetime.combine(dummy_date, start_time)  # check the logic later
+                full_end = full_start + booking.service.duration
                 busy_intervals.append((full_start.time(), full_end.time()))
 
             # 4. Filter logic
@@ -88,16 +120,20 @@ class AvailableSlotsView(APIView):
             now = datetime.datetime.now()
 
             for slot in all_slots:
+                # Calculate the intervals of the potential new appointment
+                proposed_start = datetime.datetime.combine(dummy_date, slot)
+                proposed_end = proposed_start + new_duration
+
                 is_busy = False
 
                 # Check for Double Booking
                 for start, end in busy_intervals:
-                    # Logic: If slot is >= start and slot is < end
-                    # Example: Slot 10:30. Interval 10:00-11:00.
-                    # 10:00 <= 10:30 < 11:00 -> TRUE (IT'S BUSY!)
-                    if start <= slot < end:
+                    # Logic: (StartA < EndB) and (EndA > StartB)
+                    # convert in time because can't compare datetime with time
+                    if proposed_start.time() < end and proposed_end.time() > start:
                         is_busy = True
                         break  # No point of checking the other intervals
+
                 if is_busy:
                     continue  # skip this slot
 
@@ -106,9 +142,17 @@ class AvailableSlotsView(APIView):
                 if slot_full_datetime < now:
                     continue
 
+                # # Допълнителна проверка: Дали не излизаме извън работното време?
+                # # Пример: Час 17:30, Услуга 1 час -> Край 18:30 (След края на работа)
+                # # Но това трябва да го уточня с бизнеса (може би са готови да жертват 30 минути за клиента)
+                # work_end = dt.datetime.combine(dummy_date, dt.time(end_hour, 0))
+                # if proposed_end > work_end:
+                #     continue
+
                 available_slots.append(slot.strftime("%H:%M"))
 
             return Response(available_slots)
+
         except Exception as e:
             import traceback
             print(f"ГРЕШКА: {str(e)}")

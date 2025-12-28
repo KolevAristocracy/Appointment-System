@@ -4,15 +4,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Set MIN date to Today (Restriction 1)
     const dateInput = document.getElementById('date');
     const today = new Date().toISOString().split('T')[0];
+    const categoryInputs = document.querySelectorAll('input[name="category"]');
     dateInput.setAttribute('min', today);
 
-    // Load initial data
-    loadServices();
-    loadProfessionals();
+    categoryInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            const selectedCategory = e.target.value;
+            loadServices(selectedCategory)
+
+            resetDropdown('service', 'Зареждане...');
+            resetDropdown('professional', '-- Първо изберете услуга --');
+            document.getElementById('slots-container').innerHTML = '';
+        });
+    });
 
     // 2. Add Listeners to fetch slots when inputs change
+    document.getElementById('service').addEventListener('change', (e) => {
+        const serviceId = e.target.value;
+        loadProfessionals(serviceId)
+
+        resetDropdown('professional', '-- Избери служител --');
+        document.getElementById('slots-container').innerHTML = '<p>Моля, изберете служител.</p>';
+    });
+
     document.getElementById('date').addEventListener('change', loadAvailableSlots);
     document.getElementById('professional').addEventListener('change', loadAvailableSlots);
+
+    // Load initial data
+    loadServices('hair');
+    loadProfessionals();
+
 
     // Form submit listener
     const bookingForm = document.getElementById('bookingForm');
@@ -21,10 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Helper Function
+function resetDropdown(id, defaultText) {
+    const select = document.getElementById(id);
+    select.innerHTML = `<option value="">${defaultText}</option>`; // maybe It's a good idea later to change this
+    select.value = "";
+}
+
 // Function to fetch services from Django
-async function loadServices() {
+async function loadServices(category) {
     try {
-        const response = await fetch(`${API_URL}/services/`);
+        const response = await fetch(`${API_URL}/services/?category=${category}`);
         if (!response.ok) throw new Error("Failed to fetch services");
 
         const services = await response.json();
@@ -45,9 +73,14 @@ async function loadServices() {
 }
 
 // Function to fetch professionals from Django
-async function loadProfessionals() {
+async function loadProfessionals(serviceId = null) {
     try {
-        const response = await fetch(`${API_URL}/professionals/`);
+        let url = `${API_URL}/professionals/`;
+        // If a service is chosen, filter the professionals, which can do It.
+        if (serviceId) {
+            url += `?service=${serviceId}`;
+        }
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Failed to fetch professionals");
 
         const pros = await response.json();
@@ -61,6 +94,9 @@ async function loadProfessionals() {
             option.textContent = pro.name;
             select.appendChild(option);
         });
+
+        document.getElementById('slots-container').innerHTML = '';
+
     } catch (error) {
         console.error('Error loading professionals:', error);
     }
@@ -70,6 +106,8 @@ async function loadProfessionals() {
 async function loadAvailableSlots() {
     const professionalId = document.getElementById('professional').value;
     const dateValue = document.getElementById('date').value;
+    const serviceId = document.getElementById('service').value;
+
     const slotsContainer = document.getElementById('slots-container');
     const timeInput = document.getElementById('time');
 
@@ -78,20 +116,25 @@ async function loadAvailableSlots() {
     slotsContainer.innerHTML = '<p>Зареждане...</p>';
 
     // We need both inputs to fetch data
-    if (!professionalId || !dateValue) {
+    if (!professionalId || !dateValue || !serviceId) {
         slotsContainer.innerHTML = '';
         const pEl = document.createElement('p');
         pEl.style.color = "gray";
-        pEl.textContent = "Моля, изберете Служител и Дата.";
+        pEl.textContent = "Моля, изберете Услуга, Служител и Дата.";
         slotsContainer.appendChild(pEl);
         return;
     }
 
     try {
-        const response = await fetch(`${API_URL}/slots/?date=${dateValue}&professional=${professionalId}`);
+        const response = await fetch(`${API_URL}/slots/?date=${dateValue}&professional=${professionalId}&service=${serviceId}`);
         const slots = await response.json();
 
         slotsContainer.innerHTML = '' // Clear loading text
+
+        if (slots.error) {
+            slotsContainer.innerHTML = `<p style="color: red;">Грешка: ${slots.error}</p>`;
+            return;
+        }
 
         if (slots.length === 0) {
             slotsContainer.innerHTML = ''
