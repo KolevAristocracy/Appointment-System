@@ -5,6 +5,15 @@ from rest_framework import serializers
 
 from appointment.models import Service, Professional, Appointment
 
+# Serializer for Dashboard (Read-Only)
+class AppointmentListSerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = Appointment
+        fields = ['id', 'time', 'client_name', 'client_phone', 'service_name', 'status', 'status_display']
+
 
 # Show the services to the Front-end
 class ServiceSerializer(serializers.ModelSerializer):

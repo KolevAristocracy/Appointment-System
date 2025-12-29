@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моят График</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .date-nav { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #f9f9f9; }
+        .time { font-weight: bold; font-size: 1.2em; color: #333; }
+        .status-confirmed { color: green; }
+        .status-cancelled { color: red; text-decoration: line-through; }
+        button { padding: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>📅 Моят График</h1>
+
+    <div class="date-nav">
+        <input type="date" id="datePicker">
+        <button onclick="loadSchedule()">Зареди</button>
+    </div>
+
+    <div id="schedule-container">
+        Loading...
+    </div>
+
+    <script>
+        // 1. Слагаме днешна дата по подразбиране
+        const dateInput = document.getElementById('datePicker');
+        dateInput.value = new Date().toISOString().split('T')[0];
+
+        async function loadSchedule() {
+            const date = dateInput.value;
+            const container = document.getElementById('schedule-container');
+            container.innerHTML = 'Зареждане...';
+
+            try {
+                // Извикваме нашето ново API
+                // Тъй като сме логнати в браузъра (session auth), Django знае кои сме
+                const response = await fetch(`/api/my-schedule/?date=${date}`);
+
+                if (response.status === 403) {
+                    container.innerHTML = '<p style="color:red">Не сте влезли в системата! Моля, влезте през /admin</p>';
+                    return;
+                }
+
+                const appointments = await response.json();
+
+                if (appointments.length === 0) {
+                    container.innerHTML = '<p>Няма записани часове за тази дата. ☕ Почивка!</p>';
+                    return;
+                }
+
+                let html = '';
+                appointments.forEach(app => {
+                    const statusClass = app.status === 'cancelled' ? 'status-cancelled' : 'status-confirmed';
+
+                    html += `
+                        <div class="card ${statusClass}">
+                            <div class="time">⏰ ${app.time.slice(0,5)}</div>
+                            <div><strong>Клиент:</strong> ${app.client_name}</div>
+                            <div><strong>Услуга:</strong> ${app.service_name}</div>
+                            <div>📞 <a href="tel:${app.client_phone}">${app.client_phone}</a></div>
+                            <div>Статус: ${app.status_display}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = 'Грешка при зареждане.';
+            }
+        }
+
+        // Зареди веднага при отваряне
+        loadSchedule();
+    </script>
+
+</body>
+</html>

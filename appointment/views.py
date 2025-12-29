@@ -9,9 +9,11 @@ from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from appointment.models import Service, Professional, Appointment
-from appointment.serializers import ServiceSerializer, ProfessionalSerializer, AppointmentSerializer
+from appointment.serializers import ServiceSerializer, ProfessionalSerializer, AppointmentSerializer, \
+    AppointmentListSerializer
 
 
 # 1 API, which returns a list with the services (GET)
@@ -209,3 +211,28 @@ class CreateAppointmentView(generics.CreateAPIView):
 
         # 3. (По желание) Имейл до СОБСТВЕНИКА
         # send_mail("Нова резервация!", f"Клиент {appointment.client_name} се записа...", ...)
+
+class ProfessionalScheduleView(generics.ListAPIView):
+    serializer_class = AppointmentListSerializer
+    permission_classes = [IsAuthenticated] # Only logged-in users
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if not hasattr(user, 'professional_profile'):
+            return Appointment.objects.none() # If It's just admin with no profile or client
+
+        professional = user.professional_profile
+        # Get the date from the URL (or today's date by default)
+        date_str = self.request.query_params.get('date')
+        if date_str:
+            target_date = date_str
+        else:
+            target_date = timezone.localdate()
+
+        # return the appointments for the current professional and date
+        return Appointment.objects.filter(
+            professional=professional,
+            date=target_date
+        ).order_by('time')
+
