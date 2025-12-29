@@ -36,7 +36,8 @@ class Professional(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='professional_profile',
-        null=True, blank=True,
+        null=True,
+        blank=True,
         verbose_name="Потребителски акаунт"
     )
     name = models.CharField(max_length=100, verbose_name="Име на служителя")
@@ -44,6 +45,16 @@ class Professional(models.Model):
         Service,
         related_name='professionals',
         verbose_name="Извършвани услуги"
+    )
+
+    start_work_time = models.TimeField(
+        default=datetime.time(10,0),
+        verbose_name="Начало на смяна"
+    )
+
+    end_work_time = models.TimeField(
+        default=datetime.time(18, 0),
+        verbose_name="Край на смяна"
     )
 
     is_active = models.BooleanField(default=True, verbose_name="Активен служител")

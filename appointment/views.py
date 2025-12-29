@@ -64,34 +64,44 @@ class AvailableSlotsView(APIView):
             if not date_str or not pro_id or not service_id:
                 return Response({"грешка": "Липсва дата, услуга или служител"}, status=400)
 
-            # Get the duration of the service for the new appointment
+            # Get the duration of the service for the new appointment and the professional work time
             try:
                 service_obj = Service.objects.get(pk=service_id)
-                new_duration = service_obj.duration
+                professional_obj = Professional.objects.get(pk=pro_id)
             except Service.DoesNotExist:
                 return Response({"грешка": "Невалидна услуга"}, status=400)
 
+            new_duration = service_obj.duration
+
             # Parse date
-            # CHECK LATER: Do I even need this block?
             try:
                 target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             except ValueError:
                 return Response({"грешка": "Невалиден формат на дата"}, status=400)
 
-            # 1. Define Working Hours (Hardcoded for now, ideally from DB)
-            start_hour = 10
-            end_hour = 18  # The last slot will be 17:30 if closes at 18:00
+            # 1. Define Working Hours of professional
+            current_time = professional_obj.start_work_time
+            end_work_time = professional_obj.end_work_time
 
             # 2. Generate all possible 30-min slots for that day
             all_slots = []
-            current_time = datetime.time(start_hour, 0)
-            end_time = datetime.time(end_hour, 0)
 
-            while current_time < end_time:
+            dummy_date = datetime.date(2000, 1, 1)
+            while True:
+                # Validation if duration is after working hours
+                slot_start_dt = datetime.datetime.combine(dummy_date, current_time)
+                slot_end_dt = slot_start_dt + new_duration
+
+                limit_dt = datetime.datetime.combine(dummy_date, end_work_time)
+
+                if slot_end_dt > limit_dt:
+                    break # Stop generating of new  slots, because we go outside the working hours
+
                 all_slots.append(current_time)
-                # Add 30 minutes
-                dt = datetime.datetime.combine(datetime.date.today(), current_time) + datetime.timedelta(minutes=30)
-                current_time = dt.time()
+
+                # Adding 30 minutes for the next slot
+                next_slot_dt = slot_start_dt + datetime.timedelta(minutes=30)
+                current_time = next_slot_dt.time()
 
             # 3. Fetch existing booking
             # Взимаме резервациите, НО заедно с информация за услугата!
@@ -104,7 +114,6 @@ class AvailableSlotsView(APIView):
             # Creating list with busy intervals
             # [(10:00, 11:00), (14:00, 14:30)]
             busy_intervals = []
-            dummy_date = datetime.date(2000, 1, 1)  # random date just for checking
 
             for booking in booked_slots:
                 # start time of the appointment
@@ -141,13 +150,6 @@ class AvailableSlotsView(APIView):
                 slot_full_datetime = datetime.datetime.combine(target_date, slot)
                 if slot_full_datetime < now:
                     continue
-
-                # # Допълнителна проверка: Дали не излизаме извън работното време?
-                # # Пример: Час 17:30, Услуга 1 час -> Край 18:30 (След края на работа)
-                # # Но това трябва да го уточня с бизнеса (може би са готови да жертват 30 минути за клиента)
-                # work_end = dt.datetime.combine(dummy_date, dt.time(end_hour, 0))
-                # if proposed_end > work_end:
-                #     continue
 
                 available_slots.append(slot.strftime("%H:%M"))
 
