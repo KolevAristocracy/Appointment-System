@@ -5,66 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Моят График</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .date-nav { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #f9f9f9; }
-        .time { font-weight: bold; font-size: 1.2em; color: #333; }
-        .status-confirmed { color: green; }
-        .status-cancelled { color: red; text-decoration: line-through; }
-        button { padding: 10px; cursor: pointer; }
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
+        h1 { text-align: center; color: #333; }
+
+        .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; margin-right: 5px; font-size: 0.9em; }
+        .btn-danger { background-color: #dc3545; color: white; font-size: 0.9em; }
+
+        .card { background: white; border-left: 5px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;}
+
+        /* Цветове за статусите */
+        .status-confirmed { border-left-color: #28a745; background-color: #f0fff4; }
+        .status-cancelled { border-left-color: #dc3545; opacity: 0.6; text-decoration: line-through; }
+        .status-pending { border-left-color: #ffc107; }
+
+        .info-group { flex: 1; min-width: 250px; }
+        .info-row { margin: 5px 0; }
+        .actions { display: flex; gap: 5px; }
+        .date-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>📅 Моят График</h1>
+    <h1>📅 Управление на Графика</h1>
 
-    <div class="date-nav">
+    <div class="controls">
         <input type="date" id="datePicker">
-        <button onclick="loadSchedule()">Зареди</button>
+        <button class="btn-primary" onclick="loadSchedule(true)">🔎 Търси за дата</button>
+        <button class="btn-primary" onclick="loadSchedule(false)">📋 Всички предстоящи</button>
     </div>
 
-    <div id="schedule-container">
-        Loading...
-    </div>
+    <div id="schedule-container">Зареждане...</div>
 
     <script>
-        // 1. Слагаме днешна дата по подразбиране
-        const dateInput = document.getElementById('datePicker');
-        dateInput.value = new Date().toISOString().split('T')[0];
+        // Функция за взимане на CSRF токен (нужен за POST/PATCH заявки)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
 
-        async function loadSchedule() {
-            const date = dateInput.value;
+        async function loadSchedule(filterByDate = false) {
             const container = document.getElementById('schedule-container');
-            container.innerHTML = 'Зареждане...';
+            container.innerHTML = '<p style="text-align:center">Зареждане на данни...</p>';
+
+            let url = '/api/my-schedule/';
+
+            // Ако сме натиснали бутона за конкретна дата
+            if (filterByDate) {
+                const dateVal = document.getElementById('datePicker').value;
+                if (dateVal) {
+                    url += `?date=${dateVal}`;
+                } else {
+                    alert("Моля, изберете дата!");
+                    return;
+                }
+            }
 
             try {
-                // Извикваме нашето ново API
-                // Тъй като сме логнати в браузъра (session auth), Django знае кои сме
-                const response = await fetch(`/api/my-schedule/?date=${date}`);
+                const response = await fetch(url);
 
                 if (response.status === 403) {
-                    container.innerHTML = '<p style="color:red">Не сте влезли в системата! Моля, влезте през /admin</p>';
+                    container.innerHTML = '<p style="color:red; text-align:center">⚠️ Нямате достъп! Влезте като служител.</p>';
                     return;
                 }
 
                 const appointments = await response.json();
 
                 if (appointments.length === 0) {
-                    container.innerHTML = '<p>Няма записани часове за тази дата. ☕ Почивка!</p>';
+                    container.innerHTML = '<p style="text-align:center">Няма намерени резервации.</p>';
                     return;
                 }
 
                 let html = '';
                 appointments.forEach(app => {
-                    const statusClass = app.status === 'cancelled' ? 'status-cancelled' : 'status-confirmed';
+                    // Определяме CSS класа според статуса
+                    let statusClass = 'status-pending';
+                    if (app.status === 'confirmed') statusClass = 'status-confirmed';
+                    if (app.status === 'cancelled') statusClass = 'status-cancelled';
+
+                    // Бутоните се показват само ако статусът не е отказан
+                    let actionButtons = '';
+                    if (app.status !== 'cancelled') {
+                        actionButtons = `
+                            <div class="actions">
+                                ${app.status !== 'confirmed' ? `<button class="btn-success" onclick="updateStatus(${app.id}, 'confirmed')">✔ Потвърди</button>` : ''}
+                                <button class="btn-danger" onclick="updateStatus(${app.id}, 'cancelled')">✖ Откажи</button>
+                            </div>
+                        `;
+                    }
 
                     html += `
                         <div class="card ${statusClass}">
-                            <div class="time">⏰ ${app.time.slice(0,5)}</div>
-                            <div><strong>Клиент:</strong> ${app.client_name}</div>
-                            <div><strong>Услуга:</strong> ${app.service_name}</div>
-                            <div>📞 <a href="tel:${app.client_phone}">${app.client_phone}</a></div>
-                            <div>Статус: ${app.status_display}</div>
+                            <div class="info-group">
+                                <div class="info-row"><span class="date-badge">${app.date}</span> <strong>⏰ ${app.time.slice(0,5)}</strong></div>
+                                <div class="info-row">👤 <strong>${app.client_name}</strong> (${app.service_name})</div>
+                                <div class="info-row">📞 <a href="tel:${app.client_phone}">${app.client_phone}</a></div>
+                                <div class="info-row">Статус: <i>${app.status_display}</i></div>
+                            </div>
+                            ${actionButtons}
                         </div>
                     `;
                 });
@@ -72,12 +122,41 @@
 
             } catch (error) {
                 console.error(error);
-                container.innerHTML = 'Грешка при зареждане.';
+                container.innerHTML = '<p style="color:red; text-align:center">Грешка при връзка със сървъра.</p>';
             }
         }
 
-        // Зареди веднага при отваряне
-        loadSchedule();
+        // Функция за промяна на статус
+        async function updateStatus(id, newStatus) {
+            if(!confirm("Сигурни ли сте, че искате да промените статуса?")) return;
+
+            try {
+                const response = await fetch(`/api/appointment/${id}/status/`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    // Презареждаме списъка, за да видим промяната
+                    // Проверяваме дали има дата в полето, за да знаем кой вид да заредим
+                    const dateVal = document.getElementById('datePicker').value;
+                    if (dateVal) loadSchedule(true);
+                    else loadSchedule(false);
+                } else {
+                    alert("Грешка при обновяване!");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Мрежова грешка.");
+            }
+        }
+
+        // Зареди всички по подразбиране
+        loadSchedule(false);
     </script>
 
 </body>

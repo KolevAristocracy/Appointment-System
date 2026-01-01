@@ -12,7 +12,7 @@ class AppointmentListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Appointment
-        fields = ['id', 'time', 'client_name', 'client_phone', 'service_name', 'status', 'status_display']
+        fields = ['id', 'date', 'time', 'client_name', 'client_phone', 'service_name', 'status', 'status_display']
 
 
 # Show the services to the Front-end

@@ -3,9 +3,11 @@ import textwrap
 from unicodedata import category
 
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
 # from django.shortcuts import render
 from django.utils import timezone
+from django.views.generic import TemplateView
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -223,16 +225,40 @@ class ProfessionalScheduleView(generics.ListAPIView):
             return Appointment.objects.none() # If It's just admin with no profile or client
 
         professional = user.professional_profile
+        queryset = Appointment.objects.filter(professional=professional)
+
         # Get the date from the URL (or today's date by default)
         date_str = self.request.query_params.get('date')
         if date_str:
-            target_date = date_str
+            queryset = queryset.filter(date=date_str)
         else:
-            target_date = timezone.localdate()
+            queryset = queryset.filter(date__gte=timezone.localdate())
 
         # return the appointments for the current professional and date
-        return Appointment.objects.filter(
-            professional=professional,
-            date=target_date
-        ).order_by('time')
+        return queryset.order_by('date', 'time')
 
+class UpdateAppointmentStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            appointment = Appointment.objects.get(
+                pk=pk,
+                professional__user=request.user
+            )
+        except Appointment.DoesNotExist:
+            return Response({"error": "Резервацията не е намерена или нямате права."}, status=404)
+
+        new_status = request.data.get('status')
+        if new_status not in ['confirmed', 'cancelled', 'completed']:
+            return Response({"error": "Невалиден статус"}, status=400)
+
+        appointment.status = new_status
+        appointment.save()
+
+        return Response({"message": "Статусът е обновен успешно!"})
+
+
+class DashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'dashboard.html'
+    login_url = '/admin/login/'
