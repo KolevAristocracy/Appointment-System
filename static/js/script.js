@@ -1,22 +1,24 @@
 const API_URL = '/api';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async() => {
     // 1. Set MIN date to Today (Restriction 1)
     const dateInput = document.getElementById('date');
     const today = new Date().toISOString().split('T')[0];
-    const categoryInputs = document.querySelectorAll('input[name="category"]');
+    // const categoryInputs = document.querySelectorAll('input[name="category"]');
     dateInput.setAttribute('min', today);
 
-    categoryInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            const selectedCategory = e.target.value;
-            loadServices(selectedCategory)
+    await loadCategories();
 
-            resetDropdown('service', 'Зареждане...');
-            resetDropdown('professional', '-- Първо изберете услуга --');
-            document.getElementById('slots-container').innerHTML = '';
-        });
-    });
+    // categoryInputs.forEach(input => {
+    //     input.addEventListener('change', (e) => {
+    //         const selectedCategory = e.target.value;
+    //         loadServices(selectedCategory)
+    //
+    //         resetDropdown('service', 'Зареждане...');
+    //         resetDropdown('professional', '-- Първо изберете услуга --');
+    //         document.getElementById('slots-container').innerHTML = '';
+    //     });
+    // });
 
     // 2. Add Listeners to fetch slots when inputs change
     document.getElementById('service').addEventListener('change', (e) => {
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load initial data
     loadServices('hair');
-    loadProfessionals();
+    // loadProfessionals();  // CHECK LATER: No initial info for all pro's is shown
 
 
     // Form submit listener
@@ -47,6 +49,75 @@ function resetDropdown(id, defaultText) {
     const select = document.getElementById(id);
     select.innerHTML = `<option value="">${defaultText}</option>`; // maybe It's a good idea later to change this
     select.value = "";
+}
+
+async function loadCategories() {
+    const container = document.getElementById('category-container');
+
+    try {
+        const response = await fetch(`${API_URL}/categories/`);
+        const categories = await response.json();
+
+        container.innerHTML = '';
+
+        if (categories.length === 0) {
+            container.innerHTML = 'Няма активни бизнеси.';
+            return;
+        }
+
+        categories.forEach((cat, index) => {
+            // Creating Label (so the text is clickable)
+            const label = document.createElement('label');
+            label.style.cursor = "pointer";
+            label.style.marginRight = "15px";
+
+            // Creating Radio Input
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'category';
+            radio.value = cat.slug;
+
+            // If It's the first element it selected by default
+            if (index === 0) {
+                radio.checked = true;
+            }
+
+            // Adding logic on click
+            radio.addEventListener('change', (e) => {
+                handleCategoryChange(e.target.value);
+            });
+
+            // Adding the text (e.g. Barber)
+            const span = document.createElement('span');
+            span.textContent = `${cat.icon} ${cat.name}`
+
+            // Adding input and text in the label
+            label.appendChild(radio);
+            label.appendChild(span);
+
+            // Adding the label in the container
+            container.appendChild(label);
+        });
+
+        // Auto start: loading the services for the first category immediately
+        if (categories.length > 0) {
+            handleCategoryChange(categories[0].slug);
+        }
+    } catch (error) {
+        console.error("Грешка при зареждане на категории:", error);
+        container.innerHTML = '<span class="error">Грешка при връзка със сървъра.</span>';
+    }
+}
+
+function handleCategoryChange(categorySlug) {
+    console.log("Избрана категория:", categorySlug);
+    // Loading services for the slug
+    loadServices(categorySlug);
+
+    // Reset
+    resetDropdown('service', 'Зареждане...');
+    resetDropdown('professional', '-- Първо изберете услуга --');
+    document.getElementById('slots-container').innerHTML = '';
 }
 
 // Function to fetch services from Django

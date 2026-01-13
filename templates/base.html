@@ -1,0 +1,86 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking App</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        /* Слагам стиловете тук за леснота, но е добре да са в style.css */
+        {#body { margin: 0; font-family: sans-serif; background-color: #f4f4f9; }#}
+
+        /* Навигация */
+        .navbar {
+            background-color: #333;
+            overflow: hidden;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        .navbar .user-info {
+            color: #ccc;
+            margin-right: 15px;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Контейнер за съдържанието на страниците */
+        {#.container {#}
+        {#    padding: 20px;#}
+        {#    max-width: 600px;#}
+        {#    margin: 0 auto;#}
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="nav-left">
+        <a href="{% url 'client-home' %}">🏠 Начало</a>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}">📅 Моят График</a>
+        {% endif %}
+    </div>
+
+    <div class="nav-right">
+        {% if user.is_authenticated %}
+            <span class="user-info">Здравей, {{ user.username }}</span>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" style="background:#d9534f; border-radius:4px;">Изход</button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}">Вход за служители</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+</body>
+</html>

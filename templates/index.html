@@ -1,80 +1,68 @@
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="bg">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Запази час</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-<script src="{% static 'js/script.js' %}" defer></script>
-<h1>Запазване на час</h1>
+{% block content %}
 
-<form id="bookingForm">
-    {% csrf_token %}
+    <script src="{% static 'js/script.js' %}" defer></script>
+    <h1>Запазване на час</h1>
 
-    <div class="form-group">
-        <label>Какво търсите днес?</label>
-        <div class="category-buttons">
-            <label>
-                <input type="radio" name="category" value="hair" checked> 💈 Барбър
-            </label>
-            <label>
-                <input type="radio" name="category" value="massage"> 💆 Масаж
-            </label>
+    <form id="bookingForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Какво търсите днес?</label>
+            <div id="category-container" class="category-buttons">
+                <p>Зареждане на бизнеси...</p>
+            </div>
         </div>
-    </div>
 
-    <div class="form-group">
-        <label for="service">Избери услуга:</label>
-        <select id="service" required>
-            <option value="">Зареждане на услуги...</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="professional">Избери служител:</label>
-        <select id="professional" required>
-            <option value="">Зареждане на екипа...</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="date">Дата:</label>
-        <input type="date" id="date" required>
-    </div>
-
-    <input type="hidden" id="time" required>
-
-    <div class="form-group">
-        <label>Свободни часове:</label>
-        <div id="slots-container" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <p style="color: gray;">Моля, първо изберете Служител и Дата.</p>
+        <div class="form-group">
+            <label for="service">Избери услуга:</label>
+            <select id="service" required>
+                <option value="">Зареждане на услуги...</option>
+            </select>
         </div>
-        <div id="time-error" class="error" style="display:none; margin-top:5px;">Моля, изберете час!</div>
-    </div>
 
-    <div class="form-group">
-        <label for="name">Твоето име:</label>
-        <input type="text" id="name" placeholder="Иван Иванов" required>
-    </div>
+        <div class="form-group">
+            <label for="professional">Избери служител:</label>
+            <select id="professional" required>
+                <option value="">-- Първо изберете услуга --</option>
+            </select>
+        </div>
 
-    <div class="form-group">
-        <label for="phone">Телефон:</label>
-        <input type="tel" id="phone" placeholder="0888123456" required>
-    </div>
+        <div class="form-group">
+            <label for="date">Дата:</label>
+            <input type="date" id="date" required>
+        </div>
 
-    <div class="form-group">
-        <label for="email">Email (опционално):</label>
-        <input type="email" id="email" placeholder="ivan@mail.com">
-    </div>
+        <input type="hidden" id="time" required>
 
-    <button type="submit">Запази час</button>
-</form>
+        <div class="form-group">
+            <label>Свободни часове:</label>
+            <div id="slots-container" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <p style="color: gray;">Моля, първо изберете Служител и Дата.</p>
+            </div>
+            <div id="time-error" class="error" style="display:none; margin-top:5px;">Моля, изберете час!</div>
+        </div>
 
-<div id="message"></div>
+        <div class="form-group">
+            <label for="name">Твоето име:</label>
+            <input type="text" id="name" placeholder="Иван Иванов" required>
+        </div>
 
-</body>
-</html>
+        <div class="form-group">
+            <label for="phone">Телефон:</label>
+            <input type="tel" id="phone" placeholder="0888123456" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email (опционално):</label>
+            <input type="email" id="email" placeholder="ivan@mail.com">
+        </div>
+
+        <button type="submit">Запази час</button>
+    </form>
+
+    <div id="message"></div>
+
+{% endblock %}

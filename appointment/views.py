@@ -8,15 +8,20 @@ from django.core.mail import send_mail
 # from django.shortcuts import render
 from django.utils import timezone
 from django.views.generic import TemplateView
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-from appointment.models import Service, Professional, Appointment
+from appointment.models import Service, Professional, Appointment, BusinessCategory
 from appointment.serializers import ServiceSerializer, ProfessionalSerializer, AppointmentSerializer, \
-    AppointmentListSerializer
+    AppointmentListSerializer, CategorySerializer
 
+
+class CategoryListView(generics.ListAPIView):
+    queryset = BusinessCategory.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny] # It's public
 
 # 1 API, which returns a list with the services (GET)
 class ServiceListView(generics.ListAPIView):

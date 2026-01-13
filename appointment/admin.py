@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from appointment.models import Appointment, Service, Professional
+from appointment.models import Appointment, Service, Professional, BusinessCategory
 
 
 # Register your models here.
@@ -18,4 +18,8 @@ class ServiceAdmin(admin.ModelAdmin):
 @admin.register(Professional)
 class ProfessionalAdmin(admin.ModelAdmin):
     list_display = ['name']
+
+@admin.register(BusinessCategory)
+class BusinessCategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug']
 

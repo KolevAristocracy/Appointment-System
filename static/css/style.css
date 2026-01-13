@@ -1,4 +1,4 @@
-body {
+.container {
     font-family: sans-serif;
     max-width: 600px;
     margin: 2rem auto;
@@ -20,6 +20,24 @@ input, select {
     padding: .5rem;
     margin-bottom: .5rem;
 }
+
+.category-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+/*label.r-buttons {*/
+/*    display: flex;*/
+/*    flex-direction: row-reverse;*/
+/*    justify-content: space-between;*/
+/*    margin: 1rem;*/
+/*}*/
+
+/*input[type="radio"] {*/
+/*    width: 100%;*/
+/*    padding: unset;*/
+/*    margin: 10px;*/
+/*}*/
 
 button {
     background-color: #28a745;

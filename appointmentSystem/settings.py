@@ -175,6 +175,8 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
+LOGIN_REDIRECT_URL = '/api/client'
+LOGOUT_REDIRECT_URL = '/client'
 
 # For testing, we allow everything (in production, you will set only the site's domain)
 CORS_ALLOWED_ALL_ORIGINS = True

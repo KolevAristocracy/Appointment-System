@@ -3,8 +3,13 @@ import datetime
 from django.utils import timezone
 from rest_framework import serializers
 
-from appointment.models import Service, Professional, Appointment
+from appointment.models import Service, Professional, Appointment, BusinessCategory
 
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BusinessCategory
+        fields = ['slug', 'name', 'icon']
 # Serializer for Dashboard (Read-Only)
 class AppointmentListSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)

@@ -7,20 +7,28 @@ import datetime
 from accounts.validators import PhoneNumberValidator
 from appointmentSystem import settings
 
-class Service(models.Model):
-    CATEGORY_CHOICES = [
-        ('hair', '💈 Фризьор / Барбър'),
-        ('massage', '💆 Масаж / СПА')
-    ]
 
+class BusinessCategory(models.Model):
+    name = models.CharField(max_length=50, verbose_name="Име (напр. Барбър")
+    slug = models.SlugField(unique=True, primary_key=True, verbose_name="Код (Slug)")
+    icon = models.CharField(max_length=10, default='🏢', verbose_name="Емоджи икона")
+
+    def __str__(self):
+        return f"{self.icon} {self.name}"
+
+    class Meta:
+        verbose_name = "Тип Бизнес"
+        verbose_name_plural = "Типове Бизнеси"
+
+class Service(models.Model):
     name = models.CharField(max_length=100, verbose_name="Име на услугата")
     description = models.TextField(blank=True, verbose_name="Описание")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена (лв. / €)")
     duration = models.DurationField(verbose_name="Продължителност") # Example 00:30:00
-    category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
-        default='hair',
+    category = models.ForeignKey(
+        BusinessCategory,
+        on_delete=models.CASCADE,
+        related_name='services',
         verbose_name="Категория"
     )
 

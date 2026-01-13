@@ -1,33 +1,109 @@
-<!DOCTYPE html>
-<html lang="bg">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моят График</title>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f9; }
-        h1 { text-align: center; color: #333; }
+        .container {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
 
-        .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-success { background-color: #28a745; color: white; margin-right: 5px; font-size: 0.9em; }
-        .btn-danger { background-color: #dc3545; color: white; font-size: 0.9em; }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
 
-        .card { background: white; border-left: 5px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;}
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .card {
+            background: white;
+            border-left: 5px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
         /* Цветове за статусите */
-        .status-confirmed { border-left-color: #28a745; background-color: #f0fff4; }
-        .status-cancelled { border-left-color: #dc3545; opacity: 0.6; text-decoration: line-through; }
-        .status-pending { border-left-color: #ffc107; }
+        .status-confirmed {
+            border-left-color: #28a745;
+            background-color: #f0fff4;
+        }
 
-        .info-group { flex: 1; min-width: 250px; }
-        .info-row { margin: 5px 0; }
-        .actions { display: flex; gap: 5px; }
-        .date-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-weight: bold; }
+        .status-cancelled {
+            border-left-color: #dc3545;
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .status-pending {
+            border-left-color: #ffc107;
+        }
+
+        .info-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .info-row {
+            margin: 5px 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .date-badge {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
     </style>
-</head>
-<body>
 
     <h1>📅 Управление на Графика</h1>
 
@@ -109,7 +185,7 @@
                     html += `
                         <div class="card ${statusClass}">
                             <div class="info-group">
-                                <div class="info-row"><span class="date-badge">${app.date}</span> <strong>⏰ ${app.time.slice(0,5)}</strong></div>
+                                <div class="info-row"><span class="date-badge">${app.date}</span> <strong>⏰ ${app.time.slice(0, 5)}</strong></div>
                                 <div class="info-row">👤 <strong>${app.client_name}</strong> (${app.service_name})</div>
                                 <div class="info-row">📞 <a href="tel:${app.client_phone}">${app.client_phone}</a></div>
                                 <div class="info-row">Статус: <i>${app.status_display}</i></div>
@@ -128,7 +204,7 @@
 
         // Функция за промяна на статус
         async function updateStatus(id, newStatus) {
-            if(!confirm("Сигурни ли сте, че искате да промените статуса?")) return;
+            if (!confirm("Сигурни ли сте, че искате да промените статуса?")) return;
 
             try {
                 const response = await fetch(`/api/appointment/${id}/status/`, {
@@ -137,7 +213,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
                     },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify({status: newStatus})
                 });
 
                 if (response.ok) {
@@ -159,5 +235,4 @@
         loadSchedule(false);
     </script>
 
-</body>
-</html>
+{% endblock %}
